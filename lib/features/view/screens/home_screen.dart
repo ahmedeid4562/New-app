@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:news_app/features/data/models/news_model.dart';
 import 'package:news_app/features/data/services/news_api.dart';
+import 'package:news_app/features/data/services/local_news_service.dart';
 import 'package:news_app/features/view/widgit/news_card_widgit.dart';
 import 'package:news_app/features/view/widgit/news_skeleton.dart';
 
@@ -19,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final NewsApi newsApi = NewsApi();
+  final LocalNewsService localNewsService = LocalNewsService();
 
   final TextEditingController searchController =
       TextEditingController();
@@ -35,6 +37,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoadingMore = false;
   bool hasError = false;
   bool hasMore = true;
+  bool isOffline = false;
+
+  DateTime? lastSavedTime;
 
   Object? loadingError;
 
@@ -55,7 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-
     scrollController.addListener(_onScroll);
   }
 
@@ -68,9 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_currentLanguageCode != languageCode) {
       _currentLanguageCode = languageCode;
-
       newsApi.setLanguage(languageCode);
-
       _loadInitialNews();
     }
   }
@@ -80,7 +82,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchDebounce?.cancel();
     searchController.dispose();
     scrollController.dispose();
-
     super.dispose();
   }
 
@@ -97,7 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<List<NewsModel>> _fetchNews({
     required bool loadMore,
   }) {
-    if (isSearching && searchController.text.trim().isNotEmpty) {
+    if (isSearching &&
+        searchController.text.trim().isNotEmpty) {
       return newsApi.searchNews(
         searchController.text.trim(),
         loadMore: loadMore,
@@ -125,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
       hasError = false;
       loadingError = null;
       hasMore = true;
-      newsList = [];
+      isOffline = false;
     });
 
     try {
@@ -133,14 +135,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (!mounted || requestId != _requestId) return;
 
+      final uniqueArticles = _removeDuplicates(articles);
+
       setState(() {
-        newsList = _removeDuplicates(articles);
+        newsList = uniqueArticles;
         hasMore = newsApi.hasMore;
         isLoading = false;
+        hasError = false;
+        isOffline = false;
       });
 
-      // If the first page does not fill the screen,
-      // try loading more articles.
+      if (uniqueArticles.isNotEmpty) {
+        await localNewsService.saveNews(uniqueArticles);
+
+        lastSavedTime = localNewsService.getLastSavedTime();
+      }
+
+      if (!mounted || requestId != _requestId) return;
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _onScroll();
@@ -149,10 +161,33 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (error) {
       if (!mounted || requestId != _requestId) return;
 
+      debugPrint('News loading error: $error');
+
+      List<NewsModel> cachedArticles = [];
+
+      try {
+        cachedArticles = localNewsService.getCachedNews();
+        lastSavedTime = localNewsService.getLastSavedTime();
+      } catch (cacheError) {
+        debugPrint('Local cache error: $cacheError');
+      }
+
+      if (!mounted || requestId != _requestId) return;
+
       setState(() {
-        hasError = true;
         loadingError = error;
         isLoading = false;
+        isOffline = cachedArticles.isNotEmpty;
+
+        if (cachedArticles.isNotEmpty) {
+          newsList = _removeDuplicates(cachedArticles);
+          hasError = false;
+          hasMore = false;
+        } else {
+          newsList = [];
+          hasError = true;
+          hasMore = false;
+        }
       });
     }
   }
@@ -161,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (isLoading ||
         isLoadingMore ||
         hasError ||
+        isOffline ||
         !hasMore ||
         !newsApi.hasMore ||
         newsList.isEmpty) {
@@ -178,17 +214,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (!mounted || requestId != _requestId) return;
 
-      setState(() {
-        newsList = _removeDuplicates([
-          ...newsList,
-          ...articles,
-        ]);
+      final updatedNews = _removeDuplicates([
+        ...newsList,
+        ...articles,
+      ]);
 
+      setState(() {
+        newsList = updatedNews;
         hasMore = newsApi.hasMore;
         isLoadingMore = false;
       });
 
-      // Stop requesting when the API has no more pages.
+      if (updatedNews.isNotEmpty) {
+        await localNewsService.saveNews(updatedNews);
+
+        lastSavedTime = localNewsService.getLastSavedTime();
+      }
     } catch (error) {
       if (!mounted || requestId != _requestId) return;
 
@@ -196,6 +237,8 @@ class _HomeScreenState extends State<HomeScreen> {
         loadingError = error;
         isLoadingMore = false;
       });
+
+      debugPrint('Loading more news error: $error');
     }
   }
 
@@ -220,7 +263,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void changeCategory(String category) {
     FocusScope.of(context).unfocus();
-
     _searchDebounce?.cancel();
 
     setState(() {
@@ -417,6 +459,85 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildOfflineBanner(
+    BuildContext context,
+    Color textColor,
+    Color secondaryTextColor,
+    AppLocalizations localizations,
+  ) {
+    final materialLocalizations =
+        MaterialLocalizations.of(context);
+
+    String updatedText = 'Showing saved news';
+
+    if (lastSavedTime != null) {
+      final formattedDate =
+          materialLocalizations.formatShortDate(lastSavedTime!);
+
+      final formattedTime =
+          materialLocalizations.formatTimeOfDay(
+        TimeOfDay.fromDateTime(lastSavedTime!),
+      );
+
+      updatedText =
+          'Showing saved news • Last updated: $formattedDate $formattedTime';
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.orange.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.wifi_off,
+            color: Colors.orange,
+            size: 24,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Offline Mode',
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  updatedText,
+                  style: TextStyle(
+                    color: secondaryTextColor,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: retry,
+            icon: const Icon(
+              Icons.refresh,
+              color: Colors.orange,
+            ),
+            tooltip: localizations.tryAgain,
+          ),
+        ],
       ),
     );
   }
@@ -623,6 +744,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
+          if (isOffline && newsList.isNotEmpty)
+            _buildOfflineBanner(
+              context,
+              textColor,
+              secondaryTextColor,
+              localizations,
+            ),
           Expanded(
             child: isLoading
                 ? const NewsSkeleton()
@@ -654,12 +782,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     return const Padding(
                                       padding: EdgeInsets.all(20),
                                       child: Center(
-                                        child: CircularProgressIndicator(),
+                                        child:
+                                            CircularProgressIndicator(),
                                       ),
                                     );
                                   }
 
-                                  if (hasMore) {
+                                  if (hasMore && !isOffline) {
                                     return Padding(
                                       padding: const EdgeInsets.all(16),
                                       child: Center(

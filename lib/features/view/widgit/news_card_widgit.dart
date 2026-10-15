@@ -1,6 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 import 'package:news_app/features/data/models/news_model.dart';
 import 'package:news_app/features/data/services/favorites_service.dart';
 
@@ -29,12 +29,17 @@ class _NewsCardState extends State<NewsCard> {
   bool isFavorite = false;
   bool isLoadingFavorite = false;
 
+  // رابط Cloudflare Worker الخاص بوسيط الصور.
+  static const String imageProxyUrl =
+      'https://news-image-proxy.yd94015.workers.dev/';
+
   @override
   void initState() {
     super.initState();
     checkFavorite();
   }
 
+  // التحقق مما إذا كان الخبر موجودًا في المفضلة.
   Future<void> checkFavorite() async {
     try {
       final result = await favoritesService.isFavorite(
@@ -51,6 +56,7 @@ class _NewsCardState extends State<NewsCard> {
     }
   }
 
+  // إضافة الخبر إلى المفضلة أو حذفه منها.
   Future<void> toggleFavorite() async {
     if (isLoadingFavorite) return;
 
@@ -109,10 +115,10 @@ class _NewsCardState extends State<NewsCard> {
     }
   }
 
+  // تنسيق تاريخ الخبر حسب لغة التطبيق.
   String formatDate(String date) {
     try {
       final parsedDate = DateTime.parse(date).toLocal();
-
       final locale = Localizations.localeOf(context).toString();
 
       return DateFormat(
@@ -124,6 +130,39 @@ class _NewsCardState extends State<NewsCard> {
     }
   }
 
+  // تحويل رابط الصورة إلى رابط Cloudflare Worker.
+  // بذلك لا يطلب التطبيق الصورة مباشرة من موقع الخبر.
+  String? getUsableImageUrl(String rawUrl) {
+    final imageUrl = rawUrl.trim();
+
+    if (imageUrl.isEmpty) {
+      return null;
+    }
+
+    final uri = Uri.tryParse(imageUrl);
+
+    if (uri == null ||
+        uri.host.isEmpty ||
+        (uri.scheme != 'https' && uri.scheme != 'http')) {
+      return null;
+    }
+
+    // تحويل HTTP إلى HTTPS.
+    final secureUri = uri.replace(
+      scheme: 'https',
+    );
+
+    // إرسال رابط الصورة الأصلي إلى Cloudflare Worker.
+    final proxyUri = Uri.parse(imageProxyUrl).replace(
+      queryParameters: {
+        'url': secureUri.toString(),
+      },
+    );
+
+    return proxyUri.toString();
+  }
+
+  // الشكل البديل عند عدم توفر الصورة.
   Widget buildPlaceholder() {
     final isDark =
         Theme.of(context).brightness == Brightness.dark;
@@ -149,6 +188,7 @@ class _NewsCardState extends State<NewsCard> {
           const SizedBox(height: 10),
           Text(
             localizations.imageUnavailable,
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: isDark
                   ? Colors.white60
@@ -161,16 +201,13 @@ class _NewsCardState extends State<NewsCard> {
     );
   }
 
+  // عرض الصورة باستخدام Cloudflare Worker فقط.
   Widget buildNewsImage() {
-    final imageUrl = widget.news.imageUrl.trim();
+    final imageUrl = getUsableImageUrl(
+      widget.news.imageUrl,
+    );
 
-    final uri = Uri.tryParse(imageUrl);
-
-    if (imageUrl.isEmpty ||
-        uri == null ||
-        !uri.hasAuthority ||
-        uri.host.isEmpty ||
-        (uri.scheme != 'https' && uri.scheme != 'http')) {
+    if (imageUrl == null) {
       return buildPlaceholder();
     }
 
@@ -180,7 +217,6 @@ class _NewsCardState extends State<NewsCard> {
       height: 200,
       fit: BoxFit.cover,
       gaplessPlayback: true,
-
       loadingBuilder: (
         context,
         child,
@@ -201,17 +237,24 @@ class _NewsCardState extends State<NewsCard> {
           ),
         );
       },
-
       errorBuilder: (
         context,
         error,
         stackTrace,
       ) {
-        debugPrint(
-          'Failed to load news image: $imageUrl',
-        );
+        if (kDebugMode) {
+          debugPrint(
+            'Original image URL: ${widget.news.imageUrl}',
+          );
 
-        debugPrint('Image error: $error');
+          debugPrint(
+            'Proxy image URL: $imageUrl',
+          );
+
+          debugPrint(
+            'Image loading error: $error',
+          );
+        }
 
         return buildPlaceholder();
       },
@@ -222,16 +265,15 @@ class _NewsCardState extends State<NewsCard> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    final bool isDark =
+    final isDark =
         Theme.of(context).brightness == Brightness.dark;
 
-    final Color textColor =
+    final textColor =
         Theme.of(context).colorScheme.onSurface;
 
-    final Color secondaryTextColor =
-        isDark
-            ? Colors.grey.shade400
-            : Colors.grey.shade700;
+    final secondaryTextColor = isDark
+        ? Colors.grey.shade400
+        : Colors.grey.shade700;
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -253,6 +295,7 @@ class _NewsCardState extends State<NewsCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // صورة الخبر وزر المفضلة.
             Stack(
               children: [
                 ClipRRect(
@@ -261,7 +304,6 @@ class _NewsCardState extends State<NewsCard> {
                   ),
                   child: buildNewsImage(),
                 ),
-
                 Positioned(
                   top: 12,
                   right: 12,
@@ -303,6 +345,7 @@ class _NewsCardState extends State<NewsCard> {
               ],
             ),
 
+            // بيانات الخبر.
             Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -395,9 +438,7 @@ class _NewsCardState extends State<NewsCard> {
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            formatDate(
-                              widget.news.publishedAt,
-                            ),
+                            formatDate(widget.news.publishedAt),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
