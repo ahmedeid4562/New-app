@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:news_app/features/data/models/news_model.dart';
-import 'package:news_app/features/data/services/favorites_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:news_app/features/view/cubit/favorites_cubit.dart';
+import 'package:news_app/features/view/states/favorites_state.dart';
 import 'package:news_app/features/view/widgit/news_card_widgit.dart';
 import 'package:news_app/features/view/widgit/news_skeleton.dart';
 
@@ -8,81 +10,45 @@ import '../../../core/routes/routes_app.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
-class FavoritesScreen extends StatefulWidget {
+class FavoritesScreen extends StatelessWidget {
 const FavoritesScreen({super.key});
-
-@override
-State<FavoritesScreen> createState() => _FavoritesScreenState();
-}
-
-class _FavoritesScreenState extends State<FavoritesScreen> {
-final FavoritesService favoritesService = FavoritesService();
-
-late Future<List<NewsModel>> favorites;
-
-@override
-void initState() {
-super.initState();
-favorites = favoritesService.getFavorites();
-}
-
-// Reload favorites after adding or removing an article.
-void refreshFavorites() {
-if (!mounted) return;
-setState(() {
-  favorites = favoritesService.getFavorites();
-});
-}
-
-// Refresh favorites when the user pulls down.
-Future<void> refreshFavoritesList() async {
-final newFuture = favoritesService.getFavorites();
-setState(() {
-  favorites = newFuture;
-});
-
-try {
-  await newFuture;
-} catch (_) {
-  // FutureBuilder displays the error state.
-}
-}
 
 @override
 Widget build(BuildContext context) {
 final localization = AppLocalizations.of(context)!;
 final theme = Theme.of(context);
+
 return Scaffold(
   backgroundColor: theme.scaffoldBackgroundColor,
   appBar: AppBar(
     title: Text(
       localization.favorites,
-      style: const TextStyle(
-        fontWeight: FontWeight.bold,
-      ),
+      style: const TextStyle(fontWeight: FontWeight.bold),
     ),
     centerTitle: false,
   ),
-  body: FutureBuilder<List<NewsModel>>(
-    future: favorites,
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
+  body: BlocBuilder<FavoritesCubit, FavoritesState>(
+    builder: (context, state) {
+      if (state.status == FavoritesStatus.initial ||
+          state.status == FavoritesStatus.loading) {
         return const NewsSkeleton();
       }
 
-      if (snapshot.hasError) {
-        return buildErrorState();
+      if (state.hasError) {
+        return _buildErrorState(context);
       }
 
-      final newsList = snapshot.data ?? [];
+      final newsList = state.favorites;
 
       if (newsList.isEmpty) {
-        return buildEmptyState();
+        return _buildEmptyState(context);
       }
 
       return RefreshIndicator(
         color: AppTheme.primaryColor,
-        onRefresh: refreshFavoritesList,
+        onRefresh: () {
+          return context.read<FavoritesCubit>().refreshFavorites();
+        },
         child: ListView.builder(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
@@ -91,6 +57,7 @@ return Scaffold(
             final article = newsList[index];
 
             return NewsCard(
+              key: ValueKey(article.url),
               news: article,
               onTap: () async {
                 await Navigator.pushNamed(
@@ -99,9 +66,13 @@ return Scaffold(
                   arguments: article,
                 );
 
-                refreshFavorites();
+                if (!context.mounted) return;
+
+                await context.read<FavoritesCubit>().loadFavorites();
               },
-              onFavoriteChanged: refreshFavorites,
+              onFavoriteChanged: () {
+                context.read<FavoritesCubit>().loadFavorites();
+              },
             );
           },
         ),
@@ -113,13 +84,15 @@ return Scaffold(
 }
 
 // Empty favorites state.
-Widget buildEmptyState() {
+Widget _buildEmptyState(BuildContext context) {
 final localization = AppLocalizations.of(context)!;
 final colors = Theme.of(context).colorScheme;
 
 return RefreshIndicator(
   color: AppTheme.primaryColor,
-  onRefresh: refreshFavoritesList,
+  onRefresh: () {
+    return context.read<FavoritesCubit>().refreshFavorites();
+  },
   child: ListView(
     physics: const AlwaysScrollableScrollPhysics(),
     children: [
@@ -199,10 +172,11 @@ return RefreshIndicator(
     ],
   ),
 );
+
 }
 
 // Error state.
-Widget buildErrorState() {
+Widget _buildErrorState(BuildContext context) {
 final localization = AppLocalizations.of(context)!;
 final colors = Theme.of(context).colorScheme;
 
@@ -247,7 +221,9 @@ return Center(
         ),
         const SizedBox(height: 26),
         ElevatedButton.icon(
-          onPressed: refreshFavorites,
+          onPressed: () {
+            context.read<FavoritesCubit>().loadFavorites();
+          },
           icon: const Icon(Icons.refresh_rounded),
           label: Text(localization.retry),
           style: ElevatedButton.styleFrom(

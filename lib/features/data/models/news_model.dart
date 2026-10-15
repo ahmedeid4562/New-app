@@ -34,8 +34,7 @@ class NewsModel {
       for (final value in values) {
         final result = getString(value);
 
-        if (result.isNotEmpty &&
-            result.toLowerCase() != 'null') {
+        if (result.isNotEmpty && result.toLowerCase() != 'null') {
           return result;
         }
       }
@@ -66,10 +65,7 @@ class NewsModel {
         }
       }
 
-      return getFirstString([
-        json['source_name'],
-        json['source_id'],
-      ]);
+      return getFirstString([json['source_name'], json['source_id']]);
     }
 
     return NewsModel(
@@ -80,21 +76,10 @@ class NewsModel {
         json['urlToImage'],
         json['imageUrl'],
       ]),
-      author: getAuthor(
-        json['creator'] ?? json['author'],
-      ),
-      publishedAt: getFirstString([
-        json['pubDate'],
-        json['publishedAt'],
-      ]),
-      content: getFirstString([
-        json['content'],
-        json['full_content'],
-      ]),
-      url: getFirstString([
-        json['link'],
-        json['url'],
-      ]),
+      author: getAuthor(json['creator'] ?? json['author']),
+      publishedAt: getFirstString([json['pubDate'], json['publishedAt']]),
+      content: getFirstString([json['content'], json['full_content']]),
+      url: getFirstString([json['link'], json['url']]),
       sourceName: getSourceName(),
     );
   }
@@ -112,17 +97,13 @@ class NewsModel {
     };
   }
 
-  factory NewsModel.fromSavedJson(
-    Map<String, dynamic> json,
-  ) {
+  factory NewsModel.fromSavedJson(Map<String, dynamic> json) {
     String getString(dynamic value) {
       if (value == null) return '';
 
       final result = value.toString().trim();
 
-      return result.toLowerCase() == 'null'
-          ? ''
-          : result;
+      return result.toLowerCase() == 'null' ? '' : result;
     }
 
     return NewsModel(

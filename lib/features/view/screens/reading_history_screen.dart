@@ -55,17 +55,13 @@ class ReadingHistoryScreen extends StatelessWidget {
                 if (!context.mounted) return;
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(localizations.historyCleared),
-                  ),
+                  SnackBar(content: Text(localizations.historyCleared)),
                 );
               } catch (e) {
                 if (!context.mounted) return;
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(localizations.somethingWentWrong),
-                  ),
+                  SnackBar(content: Text(localizations.somethingWentWrong)),
                 );
               }
             },
@@ -76,15 +72,11 @@ class ReadingHistoryScreen extends StatelessWidget {
         stream: historyService.getHistory(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Text(localizations.unableToLoadHistory),
-            );
+            return Center(child: Text(localizations.unableToLoadHistory));
           }
 
           final articles = snapshot.data?.docs ?? [];
@@ -130,17 +122,14 @@ class ReadingHistoryScreen extends StatelessWidget {
               final document = articles[index];
               final article = document.data();
 
-              final title =
-                  article['title'] as String? ?? 'Untitled';
+              final title = article['title'] as String? ?? 'Untitled';
 
               final url = article['url'] as String? ?? '';
 
-              final imageUrl =
-                  article['imageUrl'] as String? ?? '';
+              final imageUrl = article['imageUrl'] as String? ?? '';
 
               final sourceName =
-                  article['sourceName'] as String? ??
-                      'Unknown source';
+                  article['sourceName'] as String? ?? 'Unknown source';
 
               final viewedAt = article['viewedAt'];
               String viewedDate = '';
@@ -161,13 +150,10 @@ class ReadingHistoryScreen extends StatelessWidget {
                     final uri = Uri.tryParse(url);
 
                     if (uri == null ||
-                        !(uri.scheme == 'https' ||
-                            uri.scheme == 'http')) {
+                        !(uri.scheme == 'https' || uri.scheme == 'http')) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(
-                            localizations.invalidArticleLink,
-                          ),
+                          content: Text(localizations.invalidArticleLink),
                         ),
                       );
                       return;
@@ -182,9 +168,7 @@ class ReadingHistoryScreen extends StatelessWidget {
                       if (!opened && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(
-                              localizations.couldNotOpenArticle,
-                            ),
+                            content: Text(localizations.couldNotOpenArticle),
                           ),
                         );
                       }
@@ -193,9 +177,7 @@ class ReadingHistoryScreen extends StatelessWidget {
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(
-                            localizations.couldNotOpenArticle,
-                          ),
+                          content: Text(localizations.couldNotOpenArticle),
                         ),
                       );
                     }
@@ -212,11 +194,7 @@ class ReadingHistoryScreen extends StatelessWidget {
                                   width: 100,
                                   height: 100,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (
-                                    context,
-                                    error,
-                                    stackTrace,
-                                  ) {
+                                  errorBuilder: (context, error, stackTrace) {
                                     return Container(
                                       width: 100,
                                       height: 100,
@@ -244,9 +222,7 @@ class ReadingHistoryScreen extends StatelessWidget {
                               Text(
                                 sourceName,
                                 style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),

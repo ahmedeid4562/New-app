@@ -28,9 +28,7 @@ class ReadingHistoryService {
       return;
     }
 
-    final documentId = base64Url.encode(
-      utf8.encode(news.url.trim()),
-    );
+    final documentId = base64Url.encode(utf8.encode(news.url.trim()));
 
     await collection.doc(documentId).set({
       'title': news.title,
@@ -50,9 +48,7 @@ class ReadingHistoryService {
       return const Stream.empty();
     }
 
-    return collection
-        .orderBy('viewedAt', descending: true)
-        .snapshots();
+    return collection.orderBy('viewedAt', descending: true).snapshots();
   }
 
   Future<void> removeFromHistory(String url) async {
@@ -62,9 +58,7 @@ class ReadingHistoryService {
       return;
     }
 
-    final documentId = base64Url.encode(
-      utf8.encode(url.trim()),
-    );
+    final documentId = base64Url.encode(utf8.encode(url.trim()));
 
     await collection.doc(documentId).delete();
   }

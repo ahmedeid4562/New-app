@@ -13,11 +13,7 @@ class FavoritesService {
     final savedNews = prefs.getStringList(_key) ?? [];
 
     return savedNews
-        .map(
-          (item) => NewsModel.fromSavedJson(
-            jsonDecode(item),
-          ),
-        )
+        .map((item) => NewsModel.fromSavedJson(jsonDecode(item)))
         .toList();
   }
 
@@ -32,9 +28,7 @@ class FavoritesService {
 
     favorites.add(news);
 
-    final data = favorites
-        .map((item) => jsonEncode(item.toJson()))
-        .toList();
+    final data = favorites.map((item) => jsonEncode(item.toJson())).toList();
 
     await prefs.setStringList(_key, data);
   }
@@ -44,13 +38,9 @@ class FavoritesService {
 
     final favorites = await getFavorites();
 
-    favorites.removeWhere(
-      (item) => item.url == url,
-    );
+    favorites.removeWhere((item) => item.url == url);
 
-    final data = favorites
-        .map((item) => jsonEncode(item.toJson()))
-        .toList();
+    final data = favorites.map((item) => jsonEncode(item.toJson())).toList();
 
     await prefs.setStringList(_key, data);
   }
@@ -58,8 +48,6 @@ class FavoritesService {
   Future<bool> isFavorite(String url) async {
     final favorites = await getFavorites();
 
-    return favorites.any(
-      (item) => item.url == url,
-    );
+    return favorites.any((item) => item.url == url);
   }
 }

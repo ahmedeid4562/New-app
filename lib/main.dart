@@ -1,9 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:news_app/features/data/models/news_model.dart';
+import 'package:news_app/features/data/services/notification_service.dart';
 import 'package:news_app/features/view/screens/details_screen.dart';
 import 'package:news_app/features/view/screens/login_screen.dart';
 import 'package:news_app/features/view/screens/main_screen.dart';
@@ -18,15 +20,25 @@ import 'l10n/app_localizations.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  await Hive.initFlutter();
+
+  // تخزين الأخبار مؤقتًا.
+  await Hive.openBox<Map>('cached_news');
+
+  // تخزين معرّفات الأخبار التي سبق التعامل معها.
+  await Hive.openBox<dynamic>('new_articles');
 
   final themeController = ThemeController();
   await themeController.loadTheme();
 
   final localeController = LocaleController();
   await localeController.loadLocale();
+
+  await NotificationService.instance.initialize();
 
   runApp(
     NewsApp(
@@ -56,36 +68,25 @@ class NewsApp extends StatelessWidget {
           builder: (context, child) {
             return MaterialApp(
               debugShowCheckedModeBanner: false,
-
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
               themeMode: themeController.themeMode,
-
               locale: localeController.locale,
-
-              supportedLocales: const [
-                Locale('en'),
-                Locale('ar'),
-              ],
-
+              supportedLocales: const [Locale('en'), Locale('ar')],
               localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
                 GlobalWidgetsLocalizations.delegate,
                 GlobalCupertinoLocalizations.delegate,
               ],
-
               home: StreamBuilder<User?>(
                 stream: FirebaseAuth.instance.authStateChanges(),
                 builder: (context, snapshot) {
                   final localizations = AppLocalizations.of(context)!;
 
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Scaffold(
-                      body: Center(
-                        child: CircularProgressIndicator(),
-                      ),
+                      body: Center(child: CircularProgressIndicator()),
                     );
                   }
 
@@ -113,7 +114,6 @@ class NewsApp extends StatelessWidget {
                   return const LoginScreen();
                 },
               ),
-
               onGenerateRoute: (settings) {
                 if (settings.name == RoutesApp.details) {
                   final argument = settings.arguments;
@@ -125,8 +125,9 @@ class NewsApp extends StatelessWidget {
                           appBar: AppBar(),
                           body: Builder(
                             builder: (context) {
-                              final localizations =
-                                  AppLocalizations.of(context)!;
+                              final localizations = AppLocalizations.of(
+                                context,
+                              )!;
 
                               return Center(
                                 child: Padding(
@@ -146,9 +147,7 @@ class NewsApp extends StatelessWidget {
 
                   return MaterialPageRoute<void>(
                     builder: (context) {
-                      return DetailsScreen(
-                        news: argument,
-                      );
+                      return DetailsScreen(news: argument);
                     },
                   );
                 }
