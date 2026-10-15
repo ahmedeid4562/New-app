@@ -42,9 +42,7 @@ class _NewsCardState extends State<NewsCard> {
   // التحقق مما إذا كان الخبر موجودًا في المفضلة.
   Future<void> checkFavorite() async {
     try {
-      final result = await favoritesService.isFavorite(
-        widget.news.url,
-      );
+      final result = await favoritesService.isFavorite(widget.news.url);
 
       if (!mounted) return;
 
@@ -66,13 +64,9 @@ class _NewsCardState extends State<NewsCard> {
 
     try {
       if (isFavorite) {
-        await favoritesService.removeFavorite(
-          widget.news.url,
-        );
+        await favoritesService.removeFavorite(widget.news.url);
       } else {
-        await favoritesService.addFavorite(
-          widget.news,
-        );
+        await favoritesService.addFavorite(widget.news);
       }
 
       if (!mounted) return;
@@ -107,9 +101,7 @@ class _NewsCardState extends State<NewsCard> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.somethingWentWrong,
-          ),
+          content: Text(AppLocalizations.of(context)!.somethingWentWrong),
         ),
       );
     }
@@ -121,10 +113,7 @@ class _NewsCardState extends State<NewsCard> {
       final parsedDate = DateTime.parse(date).toLocal();
       final locale = Localizations.localeOf(context).toString();
 
-      return DateFormat(
-        'd MMM yyyy • h:mm a',
-        locale,
-      ).format(parsedDate);
+      return DateFormat('d MMM yyyy • h:mm a', locale).format(parsedDate);
     } catch (_) {
       return date;
     }
@@ -148,41 +137,31 @@ class _NewsCardState extends State<NewsCard> {
     }
 
     // تحويل HTTP إلى HTTPS.
-    final secureUri = uri.replace(
-      scheme: 'https',
-    );
+    final secureUri = uri.replace(scheme: 'https');
 
     // إرسال رابط الصورة الأصلي إلى Cloudflare Worker.
-    final proxyUri = Uri.parse(imageProxyUrl).replace(
-      queryParameters: {
-        'url': secureUri.toString(),
-      },
-    );
+    final proxyUri = Uri.parse(imageProxyUrl)
+        .replace(queryParameters: {'url': secureUri.toString()});
 
     return proxyUri.toString();
   }
 
   // الشكل البديل عند عدم توفر الصورة.
   Widget buildPlaceholder() {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final localizations = AppLocalizations.of(context)!;
 
     return Container(
       width: double.infinity,
       height: 200,
-      color: isDark
-          ? const Color(0xFF252936)
-          : const Color(0xFFECEFF4),
+      color: isDark ? const Color(0xFF252936) : const Color(0xFFECEFF4),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.newspaper_rounded,
-            color: isDark
-                ? Colors.white38
-                : Colors.blueGrey.shade300,
+            color: isDark ? Colors.white38 : Colors.blueGrey.shade300,
             size: 55,
           ),
           const SizedBox(height: 10),
@@ -190,9 +169,7 @@ class _NewsCardState extends State<NewsCard> {
             localizations.imageUnavailable,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isDark
-                  ? Colors.white60
-                  : Colors.blueGrey.shade500,
+              color: isDark ? Colors.white60 : Colors.blueGrey.shade500,
               fontSize: 13,
             ),
           ),
@@ -203,9 +180,7 @@ class _NewsCardState extends State<NewsCard> {
 
   // عرض الصورة باستخدام Cloudflare Worker فقط.
   Widget buildNewsImage() {
-    final imageUrl = getUsableImageUrl(
-      widget.news.imageUrl,
-    );
+    final imageUrl = getUsableImageUrl(widget.news.imageUrl);
 
     if (imageUrl == null) {
       return buildPlaceholder();
@@ -217,11 +192,7 @@ class _NewsCardState extends State<NewsCard> {
       height: 200,
       fit: BoxFit.cover,
       gaplessPlayback: true,
-      loadingBuilder: (
-        context,
-        child,
-        loadingProgress,
-      ) {
+      loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) {
           return child;
         }
@@ -237,23 +208,13 @@ class _NewsCardState extends State<NewsCard> {
           ),
         );
       },
-      errorBuilder: (
-        context,
-        error,
-        stackTrace,
-      ) {
+      errorBuilder: (context, error, stackTrace) {
         if (kDebugMode) {
-          debugPrint(
-            'Original image URL: ${widget.news.imageUrl}',
-          );
+          debugPrint('Original image URL: ${widget.news.imageUrl}');
 
-          debugPrint(
-            'Proxy image URL: $imageUrl',
-          );
+          debugPrint('Proxy image URL: $imageUrl');
 
-          debugPrint(
-            'Image loading error: $error',
-          );
+          debugPrint('Image loading error: $error');
         }
 
         return buildPlaceholder();
@@ -265,11 +226,9 @@ class _NewsCardState extends State<NewsCard> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final textColor =
-        Theme.of(context).colorScheme.onSurface;
+    final textColor = Theme.of(context).colorScheme.onSurface;
 
     final secondaryTextColor = isDark
         ? Colors.grey.shade400
@@ -284,9 +243,7 @@ class _NewsCardState extends State<NewsCard> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(
-                alpha: isDark ? 0.20 : 0.08,
-              ),
+              color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.08),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -316,9 +273,7 @@ class _NewsCardState extends State<NewsCard> {
                         width: 46,
                         height: 46,
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(
-                            alpha: 0.65,
-                          ),
+                          color: Colors.black.withValues(alpha: 0.65),
                           shape: BoxShape.circle,
                         ),
                         child: isLoadingFavorite
@@ -333,9 +288,7 @@ class _NewsCardState extends State<NewsCard> {
                                 isFavorite
                                     ? Icons.favorite
                                     : Icons.favorite_border,
-                                color: isFavorite
-                                    ? Colors.red
-                                    : Colors.white,
+                                color: isFavorite ? Colors.red : Colors.white,
                                 size: 25,
                               ),
                       ),

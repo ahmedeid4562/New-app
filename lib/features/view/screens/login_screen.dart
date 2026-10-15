@@ -49,11 +49,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.loginSuccessful),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(localizations.loginSuccessful)));
 
       // main.dart handles navigation using authStateChanges().
     } on FirebaseAuthException catch (e) {
@@ -107,10 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.redAccent,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
     );
   }
 
@@ -135,11 +129,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.passwordResetSent),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(localizations.passwordResetSent)));
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
@@ -181,16 +173,12 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    final bool isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final Color secondaryTextColor =
-        isDark ? Colors.white70 : Colors.black54;
+    final Color secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(localizations.login),
-      ),
+      appBar: AppBar(title: Text(localizations.login)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -206,9 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(
-                        alpha: 0.12,
-                      ),
+                      color: AppTheme.primaryColor.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -233,10 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 Text(
                   localizations.loginSubtitle,
-                  style: TextStyle(
-                    color: secondaryTextColor,
-                    fontSize: 15,
-                  ),
+                  style: TextStyle(color: secondaryTextColor, fontSize: 15),
                 ),
 
                 const SizedBox(height: 35),
@@ -248,9 +231,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: localizations.email,
                     hintText: localizations.enterYourEmail,
-                    prefixIcon: const Icon(
-                      Icons.email_outlined,
-                    ),
+                    prefixIcon: const Icon(Icons.email_outlined),
                     filled: true,
                     fillColor: Theme.of(context).cardColor,
                     border: OutlineInputBorder(
@@ -259,9 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(
-                        color: isDark
-                            ? Colors.white12
-                            : Colors.black12,
+                        color: isDark ? Colors.white12 : Colors.black12,
                       ),
                     ),
                   ),
@@ -270,8 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       return localizations.enterEmailError;
                     }
 
-                    final emailPattern =
-                        RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                    final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
                     if (!emailPattern.hasMatch(value.trim())) {
                       return localizations.enterValidEmail;
@@ -291,9 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: localizations.password,
                     hintText: localizations.enterYourPassword,
-                    prefixIcon: const Icon(
-                      Icons.lock_outline,
-                    ),
+                    prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       onPressed: () {
                         setState(() {
@@ -314,9 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(
-                        color: isDark
-                            ? Colors.white12
-                            : Colors.black12,
+                        color: isDark ? Colors.white12 : Colors.black12,
                       ),
                     ),
                   ),
@@ -335,9 +309,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: isLoading ? null : resetPassword,
                     child: Text(
                       localizations.forgotPassword,
-                      style: const TextStyle(
-                        color: AppTheme.primaryColor,
-                      ),
+                      style: const TextStyle(color: AppTheme.primaryColor),
                     ),
                   ),
                 ),
@@ -384,9 +356,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         localizations.noAccount,
-                        style: TextStyle(
-                          color: secondaryTextColor,
-                        ),
+                        style: TextStyle(color: secondaryTextColor),
                       ),
                       TextButton(
                         onPressed: isLoading

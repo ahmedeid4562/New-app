@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -143,7 +144,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get loginSuccessful => 'تم تسجيل الدخول بنجاح!';
 
   @override
-  String get incorrectCredentials => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+  String get incorrectCredentials =>
+      'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
 
   @override
   String get enterValidEmail => 'يرجى إدخال بريد إلكتروني صحيح.';
@@ -164,7 +166,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get enterEmailFirst => 'أدخل بريدك الإلكتروني أولًا.';
 
   @override
-  String get passwordResetSent => 'تم إرسال رابط إعادة تعيين كلمة المرور. تحقق من بريدك.';
+  String get passwordResetSent =>
+      'تم إرسال رابط إعادة تعيين كلمة المرور. تحقق من بريدك.';
 
   @override
   String get passwordResetFailed => 'تعذر إرسال رابط إعادة تعيين كلمة المرور.';
@@ -179,7 +182,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get clearHistory => 'مسح سجل القراءة';
 
   @override
-  String get confirmClearHistory => 'هل أنت متأكد أنك تريد حذف سجل القراءة بالكامل؟';
+  String get confirmClearHistory =>
+      'هل أنت متأكد أنك تريد حذف سجل القراءة بالكامل؟';
 
   @override
   String get historyCleared => 'تم مسح سجل القراءة';
@@ -206,7 +210,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noFavoritesYet => 'لا توجد أخبار في المفضلة حتى الآن';
 
   @override
-  String get favoritesDescription => 'احفظ الأخبار التي تعجبك بالضغط على علامة القلب، وستجدها هنا.';
+  String get favoritesDescription =>
+      'احفظ الأخبار التي تعجبك بالضغط على علامة القلب، وستجدها هنا.';
 
   @override
   String get tapHeartToSave => 'اضغط على علامة القلب لحفظ أي خبر';
@@ -215,7 +220,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get unableToLoadFavorites => 'تعذر تحميل المفضلة';
 
   @override
-  String get favoritesLoadError => 'حدثت مشكلة أثناء تحميل الأخبار المحفوظة. حاول مرة أخرى.';
+  String get favoritesLoadError =>
+      'حدثت مشكلة أثناء تحميل الأخبار المحفوظة. حاول مرة أخرى.';
 
   @override
   String get addedToFavorites => 'تمت إضافة الخبر إلى المفضلة';
@@ -308,7 +314,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get passwordsDoNotMatch => 'كلمتا المرور غير متطابقتين';
 
   @override
-  String get accountCreatedSuccessfully => 'تم إنشاء الحساب وحفظ البيانات بنجاح';
+  String get accountCreatedSuccessfully =>
+      'تم إنشاء الحساب وحفظ البيانات بنجاح';
 
   @override
   String get emailAlreadyRegistered => 'هذا البريد الإلكتروني مسجل بالفعل';
@@ -317,7 +324,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get passwordTooWeak => 'كلمة المرور ضعيفة';
 
   @override
-  String get accountCreatedButSaveFailed => 'تم إنشاء الحساب، لكن تعذر حفظ بيانات المستخدم';
+  String get accountCreatedButSaveFailed =>
+      'تم إنشاء الحساب، لكن تعذر حفظ بيانات المستخدم';
 
   @override
   String get alreadyHaveAccount => 'لديك حساب بالفعل؟';

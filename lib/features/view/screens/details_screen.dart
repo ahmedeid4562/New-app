@@ -11,10 +11,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
 class DetailsScreen extends StatefulWidget {
-  const DetailsScreen({
-    super.key,
-    required this.news,
-  });
+  const DetailsScreen({super.key, required this.news});
 
   final NewsModel news;
 
@@ -24,8 +21,7 @@ class DetailsScreen extends StatefulWidget {
 
 class _DetailsScreenState extends State<DetailsScreen> {
   final FavoritesService favoritesService = FavoritesService();
-  final ReadingHistoryService readingHistoryService =
-      ReadingHistoryService();
+  final ReadingHistoryService readingHistoryService = ReadingHistoryService();
 
   bool isFavorite = false;
   bool isLoadingFavorite = false;
@@ -55,9 +51,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
   // Check if news is in favorites.
   Future<void> checkFavorite() async {
     try {
-      final result = await favoritesService.isFavorite(
-        widget.news.url,
-      );
+      final result = await favoritesService.isFavorite(widget.news.url);
 
       if (!mounted) return;
 
@@ -79,13 +73,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
     try {
       if (isFavorite) {
-        await favoritesService.removeFavorite(
-          widget.news.url,
-        );
+        await favoritesService.removeFavorite(widget.news.url);
       } else {
-        await favoritesService.addFavorite(
-          widget.news,
-        );
+        await favoritesService.addFavorite(widget.news);
       }
 
       if (!mounted) return;
@@ -118,9 +108,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.somethingWentWrong,
-          ),
+          content: Text(AppLocalizations.of(context)!.somethingWentWrong),
         ),
       );
     }
@@ -134,11 +122,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
     final String url = widget.news.url.trim();
 
     if (title.isEmpty && url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.noNewsInfoToShare),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(localizations.noNewsInfoToShare)));
       return;
     }
 
@@ -158,9 +144,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            localizations.sharingFailed,
-          ),
+          content: Text(localizations.sharingFailed),
           duration: const Duration(seconds: 4),
         ),
       );
@@ -174,8 +158,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
       final locale = Localizations.localeOf(context).toString();
 
-      return DateFormat('d MMM yyyy • h:mm a', locale)
-          .format(parsedDate);
+      return DateFormat('d MMM yyyy • h:mm a', locale).format(parsedDate);
     } catch (e) {
       return date;
     }
@@ -195,11 +178,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
         url.host.isEmpty) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.invalidArticleLink),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(localizations.invalidArticleLink)));
 
       return;
     }
@@ -212,9 +193,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
       if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.couldNotOpenArticle),
-          ),
+          SnackBar(content: Text(localizations.couldNotOpenArticle)),
         );
       }
     } catch (e) {
@@ -223,9 +202,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.couldNotOpenArticle),
-        ),
+        SnackBar(content: Text(localizations.couldNotOpenArticle)),
       );
     }
   }
@@ -249,10 +226,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
           const SizedBox(height: 8),
           Text(
             localizations.noImage,
-            style: TextStyle(
-              color: Colors.grey.shade500,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
           ),
         ],
       ),
@@ -292,32 +266,21 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
   // Author and date information.
-  Widget buildInfoRow({
-    required IconData icon,
-    required String text,
-  }) {
-    final secondaryTextColor =
-        Theme.of(context).brightness == Brightness.dark
-            ? Colors.grey.shade400
-            : Colors.grey.shade700;
+  Widget buildInfoRow({required IconData icon, required String text}) {
+    final secondaryTextColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.grey.shade400
+        : Colors.grey.shade700;
 
     return Row(
       children: [
-        Icon(
-          icon,
-          color: secondaryTextColor,
-          size: 17,
-        ),
+        Icon(icon, color: secondaryTextColor, size: 17),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: secondaryTextColor,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: secondaryTextColor, fontSize: 12),
           ),
         ),
       ],
@@ -325,21 +288,18 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
   // News content section.
-  Widget buildSection({
-    required String title,
-    required String content,
-  }) {
+  Widget buildSection({required String title, required String content}) {
     if (content.trim().isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final bool isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     final Color textColor = Theme.of(context).colorScheme.onSurface;
 
-    final Color secondaryTextColor =
-        isDark ? Colors.grey.shade300 : Colors.grey.shade800;
+    final Color secondaryTextColor = isDark
+        ? Colors.grey.shade300
+        : Colors.grey.shade800;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,14 +355,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Icon(
-                      isFavorite
-                          ? Icons.favorite
-                          : Icons.favorite_border,
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
                       color: isFavorite ? Colors.red : textColor,
                     ),
             ),
@@ -432,9 +388,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                         vertical: 7,
                       ),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(
-                          alpha: 0.12,
-                        ),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -483,15 +437,12 @@ class _DetailsScreenState extends State<DetailsScreen> {
                               text: widget.news.author,
                             ),
                           ),
-                        if (hasAuthor && hasDate)
-                          const SizedBox(width: 15),
+                        if (hasAuthor && hasDate) const SizedBox(width: 15),
                         if (hasDate)
                           Expanded(
                             child: buildInfoRow(
                               icon: Icons.access_time,
-                              text: formatDate(
-                                widget.news.publishedAt,
-                              ),
+                              text: formatDate(widget.news.publishedAt),
                             ),
                           ),
                       ],

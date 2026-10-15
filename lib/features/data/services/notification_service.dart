@@ -8,12 +8,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../../firebase_options.dart';
 
 @pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(
-  RemoteMessage message,
-) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   log('Background message ID: ${message.messageId}');
   log('Background message data: ${message.data}');
@@ -29,8 +25,7 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  static const AndroidNotificationChannel _channel =
-      AndroidNotificationChannel(
+  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'news_channel',
     'News Notifications',
     description: 'Notifications about news updates',
@@ -54,9 +49,7 @@ class NotificationService {
 
       log('Subscribed to news_updates topic');
 
-      FirebaseMessaging.onMessage.listen(
-        _showForegroundNotification,
-      );
+      FirebaseMessaging.onMessage.listen(_showForegroundNotification);
 
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
         log('Notification opened: ${message.messageId}');
@@ -99,21 +92,18 @@ class NotificationService {
 
     final androidPlugin = _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+          AndroidFlutterLocalNotificationsPlugin
+        >();
 
     await androidPlugin?.createNotificationChannel(_channel);
   }
 
-  Future<void> _showForegroundNotification(
-    RemoteMessage message,
-  ) async {
+  Future<void> _showForegroundNotification(RemoteMessage message) async {
     final notification = message.notification;
 
-    final title =
-        notification?.title ?? message.data['title']?.toString();
+    final title = notification?.title ?? message.data['title']?.toString();
 
-    final body =
-        notification?.body ?? message.data['body']?.toString();
+    final body = notification?.body ?? message.data['body']?.toString();
 
     if (title == null && body == null) {
       log('Received a data-only message without title or body');

@@ -20,13 +20,9 @@ import 'l10n/app_localizations.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  FirebaseMessaging.onBackgroundMessage(
-    firebaseMessagingBackgroundHandler,
-  );
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   await Hive.initFlutter();
 
@@ -76,10 +72,7 @@ class NewsApp extends StatelessWidget {
               darkTheme: AppTheme.darkTheme,
               themeMode: themeController.themeMode,
               locale: localeController.locale,
-              supportedLocales: const [
-                Locale('en'),
-                Locale('ar'),
-              ],
+              supportedLocales: const [Locale('en'), Locale('ar')],
               localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
@@ -89,15 +82,11 @@ class NewsApp extends StatelessWidget {
               home: StreamBuilder<User?>(
                 stream: FirebaseAuth.instance.authStateChanges(),
                 builder: (context, snapshot) {
-                  final localizations =
-                      AppLocalizations.of(context)!;
+                  final localizations = AppLocalizations.of(context)!;
 
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Scaffold(
-                      body: Center(
-                        child: CircularProgressIndicator(),
-                      ),
+                      body: Center(child: CircularProgressIndicator()),
                     );
                   }
 
@@ -136,13 +125,13 @@ class NewsApp extends StatelessWidget {
                           appBar: AppBar(),
                           body: Builder(
                             builder: (context) {
-                              final localizations =
-                                  AppLocalizations.of(context)!;
+                              final localizations = AppLocalizations.of(
+                                context,
+                              )!;
 
                               return Center(
                                 child: Padding(
-                                  padding:
-                                      const EdgeInsets.all(24),
+                                  padding: const EdgeInsets.all(24),
                                   child: Text(
                                     localizations.invalidArticleLink,
                                     textAlign: TextAlign.center,
@@ -158,9 +147,7 @@ class NewsApp extends StatelessWidget {
 
                   return MaterialPageRoute<void>(
                     builder: (context) {
-                      return DetailsScreen(
-                        news: argument,
-                      );
+                      return DetailsScreen(news: argument);
                     },
                   );
                 }

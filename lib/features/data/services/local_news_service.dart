@@ -39,9 +39,7 @@ class LocalNewsService {
       if (item is Map) {
         try {
           cachedNews.add(
-            NewsModel.fromSavedJson(
-              Map<String, dynamic>.from(item),
-            ),
+            NewsModel.fromSavedJson(Map<String, dynamic>.from(item)),
           );
         } catch (error) {
           // Skip invalid cached articles.

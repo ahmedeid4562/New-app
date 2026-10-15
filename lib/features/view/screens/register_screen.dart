@@ -50,11 +50,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     try {
-      final UserCredential credential =
-          await auth.createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text,
-      );
+      final UserCredential credential = await auth
+          .createUserWithEmailAndPassword(
+            email: emailController.text.trim(),
+            password: passwordController.text,
+          );
 
       final User user = credential.user!;
 
@@ -68,16 +68,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.accountCreatedSuccessfully),
-        ),
+        SnackBar(content: Text(localizations.accountCreatedSuccessfully)),
       );
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const LoginScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
@@ -130,10 +126,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.redAccent,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
     );
   }
 
@@ -142,9 +135,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(localizations.createAccount),
-      ),
+      appBar: AppBar(title: Text(localizations.createAccount)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -167,10 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 Text(
                   localizations.signUpSubtitle,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 15,
-                  ),
+                  style: const TextStyle(color: Colors.grey, fontSize: 15),
                 ),
 
                 const SizedBox(height: 35),
@@ -213,8 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return localizations.pleaseEnterEmail;
                     }
 
-                    final emailRegex =
-                        RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
                     if (!emailRegex.hasMatch(value.trim())) {
                       return localizations.pleaseEnterValidEmail;
@@ -274,8 +261,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     suffixIcon: IconButton(
                       onPressed: () {
                         setState(() {
-                          obscureConfirmPassword =
-                              !obscureConfirmPassword;
+                          obscureConfirmPassword = !obscureConfirmPassword;
                         });
                       },
                       icon: Icon(
@@ -332,9 +318,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Flexible(
                       child: Text(
                         localizations.alreadyHaveAccount,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                        ),
+                        style: const TextStyle(color: Colors.grey),
                       ),
                     ),
 

@@ -161,8 +161,7 @@ class _NewsSkeletonState extends State<NewsSkeleton>
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     final Color cardColor = Theme.of(context).cardColor;
 

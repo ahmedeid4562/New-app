@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -164,7 +165,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterEmailFirst => 'Enter your email first.';
 
   @override
-  String get passwordResetSent => 'Password reset email sent. Check your inbox.';
+  String get passwordResetSent =>
+      'Password reset email sent. Check your inbox.';
 
   @override
   String get passwordResetFailed => 'Unable to send password reset email.';
@@ -179,7 +181,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearHistory => 'Clear History';
 
   @override
-  String get confirmClearHistory => 'Are you sure you want to delete all reading history?';
+  String get confirmClearHistory =>
+      'Are you sure you want to delete all reading history?';
 
   @override
   String get historyCleared => 'Reading history cleared';
@@ -206,7 +209,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noFavoritesYet => 'No Favorites Yet';
 
   @override
-  String get favoritesDescription => 'Save the news you like by tapping the heart icon, and you will find them here.';
+  String get favoritesDescription =>
+      'Save the news you like by tapping the heart icon, and you will find them here.';
 
   @override
   String get tapHeartToSave => 'Tap the heart icon on any news to save it';
@@ -215,7 +219,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unableToLoadFavorites => 'Unable to Load Favorites';
 
   @override
-  String get favoritesLoadError => 'Something went wrong while loading your saved articles. Please try again.';
+  String get favoritesLoadError =>
+      'Something went wrong while loading your saved articles. Please try again.';
 
   @override
   String get addedToFavorites => 'Added to favorites';
@@ -308,7 +313,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordsDoNotMatch => 'Passwords do not match';
 
   @override
-  String get accountCreatedSuccessfully => 'Account created and data saved successfully';
+  String get accountCreatedSuccessfully =>
+      'Account created and data saved successfully';
 
   @override
   String get emailAlreadyRegistered => 'This email is already registered';
@@ -317,7 +323,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordTooWeak => 'Password is too weak';
 
   @override
-  String get accountCreatedButSaveFailed => 'Account created, but saving user data failed';
+  String get accountCreatedButSaveFailed =>
+      'Account created, but saving user data failed';
 
   @override
   String get alreadyHaveAccount => 'Already have an account?';
