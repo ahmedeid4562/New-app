@@ -6,106 +6,108 @@ import '../../data/services/favorites_service.dart';
 import '../states/favorites_state.dart';
 
 class FavoritesCubit extends Cubit<FavoritesState> {
-  FavoritesCubit({
-    FavoritesService? favoritesService,
-  })  : _favoritesService = favoritesService ?? FavoritesService(),
-        super(const FavoritesState());
+FavoritesCubit({
+FavoritesService? favoritesService,
+})  : _favoritesService = favoritesService ?? FavoritesService(),
+super(const FavoritesState());
 
-  final FavoritesService _favoritesService;
+final FavoritesService _favoritesService;
 
-  int _requestId = 0;
+int _requestId = 0;
 
-  // Load saved favorites.
-  Future<void> loadFavorites() async {
-    final requestId = ++_requestId;
+Future<void> loadFavorites() async {
+final requestId = ++_requestId;
 
-    emit(
-      state.copyWith(
-        status: FavoritesStatus.loading,
-        clearError: true,
-      ),
-    );
+emit(
+  state.copyWith(
+    status: FavoritesStatus.loading,
+    clearError: true,
+  ),
+);
 
-    try {
-      final favorites = await _favoritesService.getFavorites();
+try {
+  final favorites = await _favoritesService.getFavorites();
 
-      if (isClosed || requestId != _requestId) return;
+  if (isClosed || requestId != _requestId) return;
 
-      emit(
-        state.copyWith(
-          status: FavoritesStatus.success,
-          favorites: favorites,
-          clearError: true,
-        ),
-      );
-    } catch (error, stackTrace) {
-      if (isClosed || requestId != _requestId) return;
+  emit(
+    state.copyWith(
+      status: FavoritesStatus.success,
+      favorites: favorites,
+      clearError: true,
+    ),
+  );
+} catch (error, stackTrace) {
+  if (isClosed || requestId != _requestId) return;
 
-      debugPrint('Failed to load favorites: $error');
-      debugPrintStack(stackTrace: stackTrace);
+  debugPrint('Failed to load favorites: $error');
+  debugPrintStack(stackTrace: stackTrace);
 
-      emit(
-        state.copyWith(
-          status: FavoritesStatus.failure,
-          error: error,
-        ),
-      );
-    }
-  }
+  emit(
+    state.copyWith(
+      status: FavoritesStatus.failure,
+      error: error,
+    ),
+  );
+}
 
-  // Refresh favorites.
-  Future<void> refreshFavorites() async {
-    await loadFavorites();
-  }
+}
 
-  // Add an article to favorites.
-  Future<void> addFavorite(NewsModel news) async {
-    try {
-      await _favoritesService.addFavorite(news);
+Future<void> refreshFavorites() async {
+await loadFavorites();
+}
 
-      if (isClosed) return;
+Future<void> addFavorite(NewsModel news) async {
+try {
+await _favoritesService.addFavorite(news);
 
-      await loadFavorites();
-    } catch (error, stackTrace) {
-      if (isClosed) return;
+  if (isClosed) return;
 
-      debugPrint('Failed to add favorite: $error');
-      debugPrintStack(stackTrace: stackTrace);
+  await loadFavorites();
+} catch (error, stackTrace) {
+  if (isClosed) return;
 
-      emit(
-        state.copyWith(
-          status: FavoritesStatus.failure,
-          error: error,
-        ),
-      );
-    }
-  }
+  debugPrint('Failed to add favorite: $error');
+  debugPrintStack(stackTrace: stackTrace);
 
-  // Remove an article from favorites.
-  Future<void> removeFavorite(String url) async {
-    try {
-      await _favoritesService.removeFavorite(url);
+  emit(
+    state.copyWith(
+      status: FavoritesStatus.failure,
+      error: error,
+    ),
+  );
 
-      if (isClosed) return;
+  rethrow;
+}
 
-      await loadFavorites();
-    } catch (error, stackTrace) {
-      if (isClosed) return;
+}
 
-      debugPrint('Failed to remove favorite: $error');
-      debugPrintStack(stackTrace: stackTrace);
+Future<void> removeFavorite(String url) async {
+try {
+await _favoritesService.removeFavorite(url);
 
-      emit(
-        state.copyWith(
-          status: FavoritesStatus.failure,
-          error: error,
-        ),
-      );
-    }
-  }
+  if (isClosed) return;
 
-  // Check whether an article is a favorite.
-  Future<bool> isFavorite(String url) {
-    return _favoritesService.isFavorite(url);
-  }
+  await loadFavorites();
+} catch (error, stackTrace) {
+  if (isClosed) return;
+
+  debugPrint('Failed to remove favorite: $error');
+  debugPrintStack(stackTrace: stackTrace);
+
+  emit(
+    state.copyWith(
+      status: FavoritesStatus.failure,
+      error: error,
+    ),
+  );
+
+  rethrow;
+}
+
+}
+
+Future<bool> isFavorite(String url) {
+return _favoritesService.isFavorite(url);
+}
 }

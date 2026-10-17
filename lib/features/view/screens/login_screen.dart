@@ -15,8 +15,11 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final FirebaseAuth auth = FirebaseAuth.instance;
 
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController emailController =
+      TextEditingController();
+
+  final TextEditingController passwordController =
+      TextEditingController();
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
@@ -30,7 +33,10 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // Login
   Future<void> login() async {
+    if (isLoading) return;
+
     if (!formKey.currentState!.validate()) {
       return;
     }
@@ -42,18 +48,43 @@ class _LoginScreenState extends State<LoginScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     try {
-      await auth.signInWithEmailAndPassword(
+      debugPrint('Starting login...');
+
+      final credential = await auth.signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text,
       );
 
-      if (!mounted) return;
+      final user = credential.user;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(localizations.loginSuccessful)));
+      if (user != null) {
+        await user.reload();
 
-      // main.dart handles navigation using authStateChanges().
-    } on FirebaseAuthException catch (e) {
+        final currentUser = auth.currentUser;
+
+        debugPrint('Login successful: ${user.uid}');
+        debugPrint('Current Firebase user: ${currentUser?.uid}');
+        debugPrint('User email: ${currentUser?.email}');
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(localizations.loginSuccessful),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+
+        // AuthGate in main.dart handles navigation automatically.
+        // Do not navigate manually here.
+      } else {
+        debugPrint('Login returned a null user.');
+      }
+    } on FirebaseAuthException catch (e, stackTrace) {
+      debugPrint('Firebase login error: ${e.code}');
+      debugPrint('Firebase login message: ${e.message}');
+      debugPrintStack(stackTrace: stackTrace);
+
       if (!mounted) return;
 
       String message;
@@ -87,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       showError(message);
     } catch (e, stackTrace) {
-      debugPrint('Login error: $e');
+      debugPrint('Unexpected login error: $e');
       debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
@@ -102,14 +133,20 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // Show error message
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+      ),
     );
   }
 
+  // Reset password
   Future<void> resetPassword() async {
     final localizations = AppLocalizations.of(context)!;
+
     final email = emailController.text.trim();
 
     if (email.isEmpty) {
@@ -117,7 +154,8 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    final emailPattern =
+        RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
     if (!emailPattern.hasMatch(email)) {
       showError(localizations.enterValidEmail);
@@ -129,10 +167,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(localizations.passwordResetSent)));
-    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(localizations.passwordResetSent),
+        ),
+      );
+    } on FirebaseAuthException catch (e, stackTrace) {
+      debugPrint('Password reset error: ${e.code}');
+      debugPrint('Password reset message: ${e.message}');
+      debugPrintStack(stackTrace: stackTrace);
+
       if (!mounted) return;
 
       String message;
@@ -173,12 +217,16 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isDark =
+        Theme.of(context).brightness == Brightness.dark;
 
-    final Color secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
+    final Color secondaryTextColor =
+        isDark ? Colors.white70 : Colors.black54;
 
     return Scaffold(
-      appBar: AppBar(title: Text(localizations.login)),
+      appBar: AppBar(
+        title: Text(localizations.login),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -189,12 +237,15 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 25),
 
+                // App icon
                 Center(
                   child: Container(
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                      color: AppTheme.primaryColor.withValues(
+                        alpha: 0.12,
+                      ),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -219,19 +270,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 Text(
                   localizations.loginSubtitle,
-                  style: TextStyle(color: secondaryTextColor, fontSize: 15),
+                  style: TextStyle(
+                    color: secondaryTextColor,
+                    fontSize: 15,
+                  ),
                 ),
 
                 const SizedBox(height: 35),
 
+                // Email
                 TextFormField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
+                  autofillHints: const [
+                    AutofillHints.email,
+                  ],
                   decoration: InputDecoration(
                     labelText: localizations.email,
                     hintText: localizations.enterYourEmail,
-                    prefixIcon: const Icon(Icons.email_outlined),
+                    prefixIcon: const Icon(
+                      Icons.email_outlined,
+                    ),
                     filled: true,
                     fillColor: Theme.of(context).cardColor,
                     border: OutlineInputBorder(
@@ -240,7 +300,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(
-                        color: isDark ? Colors.white12 : Colors.black12,
+                        color: isDark
+                            ? Colors.white12
+                            : Colors.black12,
                       ),
                     ),
                   ),
@@ -249,7 +311,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       return localizations.enterEmailError;
                     }
 
-                    final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                    final emailPattern =
+                        RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
                     if (!emailPattern.hasMatch(value.trim())) {
                       return localizations.enterValidEmail;
@@ -261,15 +324,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 18),
 
+                // Password
                 TextFormField(
                   controller: passwordController,
                   obscureText: obscurePassword,
                   textInputAction: TextInputAction.done,
+                  autofillHints: const [
+                    AutofillHints.password,
+                  ],
                   onFieldSubmitted: (_) => login(),
                   decoration: InputDecoration(
                     labelText: localizations.password,
                     hintText: localizations.enterYourPassword,
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline,
+                    ),
                     suffixIcon: IconButton(
                       onPressed: () {
                         setState(() {
@@ -290,7 +359,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(
-                        color: isDark ? Colors.white12 : Colors.black12,
+                        color: isDark
+                            ? Colors.white12
+                            : Colors.black12,
                       ),
                     ),
                   ),
@@ -303,19 +374,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
 
+                // Forgot password
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
                   child: TextButton(
                     onPressed: isLoading ? null : resetPassword,
                     child: Text(
                       localizations.forgotPassword,
-                      style: const TextStyle(color: AppTheme.primaryColor),
+                      style: const TextStyle(
+                        color: AppTheme.primaryColor,
+                      ),
                     ),
                   ),
                 ),
 
                 const SizedBox(height: 15),
 
+                // Login button
                 SizedBox(
                   width: double.infinity,
                   height: 54,
@@ -349,6 +424,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 25),
 
+                // Create account
                 Center(
                   child: Wrap(
                     alignment: WrapAlignment.center,
@@ -356,7 +432,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         localizations.noAccount,
-                        style: TextStyle(color: secondaryTextColor),
+                        style: TextStyle(
+                          color: secondaryTextColor,
+                        ),
                       ),
                       TextButton(
                         onPressed: isLoading
