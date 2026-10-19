@@ -5,49 +5,73 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/news_model.dart';
 
 class FavoritesService {
-  static const String _key = 'favorites';
+static const String _key = 'favorites';
 
-  Future<List<NewsModel>> getFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
+Future<List<NewsModel>> getFavorites() async {
+final prefs = await SharedPreferences.getInstance();
+final savedNews = prefs.getStringList(_key) ?? [];
 
-    final savedNews = prefs.getStringList(_key) ?? [];
+return savedNews.map((item) {
+  return NewsModel.fromSavedJson(
+    jsonDecode(item) as Map<String, dynamic>,
+  );
+}).toList();
 
-    return savedNews
-        .map((item) => NewsModel.fromSavedJson(jsonDecode(item)))
-        .toList();
+}
+
+Future<void> addFavorite(NewsModel news) async {
+final prefs = await SharedPreferences.getInstance();
+
+final savedNews = prefs.getStringList(_key) ?? [];
+
+final alreadyExists = savedNews.any((item) {
+  try {
+    final json = jsonDecode(item) as Map<String, dynamic>;
+    return json['url'] == news.url;
+  } catch (_) {
+    return false;
   }
+});
 
-  Future<void> addFavorite(NewsModel news) async {
-    final prefs = await SharedPreferences.getInstance();
+if (alreadyExists) return;
 
-    final favorites = await getFavorites();
+savedNews.add(jsonEncode(news.toJson()));
 
-    if (favorites.any((item) => item.url == news.url)) {
-      return;
-    }
+await prefs.setStringList(_key, savedNews);
 
-    favorites.add(news);
+}
 
-    final data = favorites.map((item) => jsonEncode(item.toJson())).toList();
+Future<void> removeFavorite(String url) async {
+final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setStringList(_key, data);
+final savedNews = prefs.getStringList(_key) ?? [];
+
+savedNews.removeWhere((item) {
+  try {
+    final json = jsonDecode(item) as Map<String, dynamic>;
+    return json['url'] == url;
+  } catch (_) {
+    return false;
   }
+});
 
-  Future<void> removeFavorite(String url) async {
-    final prefs = await SharedPreferences.getInstance();
+await prefs.setStringList(_key, savedNews);
 
-    final favorites = await getFavorites();
+}
 
-    favorites.removeWhere((item) => item.url == url);
+Future<bool> isFavorite(String url) async {
+final prefs = await SharedPreferences.getInstance();
 
-    final data = favorites.map((item) => jsonEncode(item.toJson())).toList();
+final savedNews = prefs.getStringList(_key) ?? [];
 
-    await prefs.setStringList(_key, data);
+return savedNews.any((item) {
+  try {
+    final json = jsonDecode(item) as Map<String, dynamic>;
+    return json['url'] == url;
+  } catch (_) {
+    return false;
   }
+});
 
-  Future<bool> isFavorite(String url) async {
-    final favorites = await getFavorites();
-
-    return favorites.any((item) => item.url == url);
-  }
+}
 }

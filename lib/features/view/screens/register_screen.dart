@@ -39,6 +39,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> register() async {
+    if (isLoading) return;
+
     if (!formKey.currentState!.validate()) {
       return;
     }
@@ -50,13 +52,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     try {
-      final UserCredential credential = await auth
-          .createUserWithEmailAndPassword(
-            email: emailController.text.trim(),
-            password: passwordController.text,
-          );
+      debugPrint('Starting account registration...');
 
-      final User user = credential.user!;
+      final UserCredential credential =
+          await auth.createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text,
+      );
+
+      final User? user = credential.user;
+
+      if (user == null) {
+        if (!mounted) return;
+
+        showError(localizations.somethingWentWrong);
+        return;
+      }
+
+      debugPrint('Account created: ${user.uid}');
 
       await firestore.collection('users').doc(user.uid).set({
         'uid': user.uid,
@@ -67,15 +80,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
+      debugPrint('User information saved successfully.');
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(localizations.accountCreatedSuccessfully)),
+        SnackBar(
+          content: Text(localizations.accountCreatedSuccessfully),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    } on FirebaseAuthException catch (e) {
+      // Firebase signs the user in automatically after registration.
+      // AuthGate in main.dart is responsible for opening MainScreen.
+      // Do not navigate manually after successful registration.
+    } on FirebaseAuthException catch (e, stackTrace) {
+      debugPrint('Registration error: ${e.code}');
+      debugPrint('Registration message: ${e.message}');
+      debugPrintStack(stackTrace: stackTrace);
+
       if (!mounted) return;
 
       String message;
@@ -102,14 +123,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
 
       showError(message);
-    } on FirebaseException catch (e) {
-      debugPrint('Firestore error: ${e.code} - ${e.message}');
+    } on FirebaseException catch (e, stackTrace) {
+      debugPrint('Firebase error: ${e.code} - ${e.message}');
+      debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
 
       showError(localizations.accountCreatedButSaveFailed);
     } catch (e, stackTrace) {
-      debugPrint('Registration error: $e');
+      debugPrint('Unexpected registration error: $e');
       debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
@@ -126,7 +148,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
@@ -135,7 +161,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: Text(localizations.createAccount)),
+      appBar: AppBar(
+        title: Text(localizations.createAccount),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -158,11 +186,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 Text(
                   localizations.signUpSubtitle,
-                  style: const TextStyle(color: Colors.grey, fontSize: 15),
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 15,
+                  ),
                 ),
 
                 const SizedBox(height: 35),
 
+                // Name
                 TextFormField(
                   controller: nameController,
                   keyboardType: TextInputType.name,
@@ -187,10 +219,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 16),
 
+                // Email
                 TextFormField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
+                  autofillHints: const [
+                    AutofillHints.email,
+                  ],
                   decoration: InputDecoration(
                     labelText: localizations.email,
                     hintText: localizations.enterYourEmail,
@@ -201,7 +237,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return localizations.pleaseEnterEmail;
                     }
 
-                    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                    final emailRegex =
+                        RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
                     if (!emailRegex.hasMatch(value.trim())) {
                       return localizations.pleaseEnterValidEmail;
@@ -213,10 +250,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 16),
 
+                // Password
                 TextFormField(
                   controller: passwordController,
                   obscureText: obscurePassword,
                   textInputAction: TextInputAction.next,
+                  autofillHints: const [
+                    AutofillHints.newPassword,
+                  ],
                   decoration: InputDecoration(
                     labelText: localizations.password,
                     hintText: localizations.enterPassword,
@@ -249,10 +290,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 16),
 
+                // Confirm password
                 TextFormField(
                   controller: confirmPasswordController,
                   obscureText: obscureConfirmPassword,
                   textInputAction: TextInputAction.done,
+                  autofillHints: const [
+                    AutofillHints.newPassword,
+                  ],
                   onFieldSubmitted: (_) => register(),
                   decoration: InputDecoration(
                     labelText: localizations.confirmPassword,
@@ -261,7 +306,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     suffixIcon: IconButton(
                       onPressed: () {
                         setState(() {
-                          obscureConfirmPassword = !obscureConfirmPassword;
+                          obscureConfirmPassword =
+                              !obscureConfirmPassword;
                         });
                       },
                       icon: Icon(
@@ -286,6 +332,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 30),
 
+                // Create account button
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -312,25 +359,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 20),
 
+                // Already have an account? Login.
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Flexible(
                       child: Text(
                         localizations.alreadyHaveAccount,
-                        style: const TextStyle(color: Colors.grey),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
 
                     TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
-                          ),
-                        );
-                      },
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (_) => const LoginScreen(),
+                                ),
+                              );
+                            },
                       child: Text(
                         localizations.login,
                         style: const TextStyle(

@@ -4,42 +4,42 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:news_app/features/data/models/news_model.dart';
-import 'package:news_app/features/data/services/notification_service.dart';
-import 'package:news_app/features/view/screens/details_screen.dart';
-import 'package:news_app/features/view/screens/login_screen.dart';
-import 'package:news_app/features/view/screens/main_screen.dart';
 
 import 'core/routes/routes_app.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/theme/locale_controller.dart';
+
+import 'features/data/models/news_model.dart';
+import 'features/data/services/notification_service.dart';
+
+import 'features/view/screens/details_screen.dart';
+import 'features/view/screens/login_screen.dart';
+import 'features/view/screens/main_screen.dart';
+
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  FirebaseMessaging.onBackgroundMessage(
+    firebaseMessagingBackgroundHandler,
+  );
 
   await Hive.initFlutter();
-
-  // تخزين الأخبار مؤقتًا.
-  await Hive.openBox<Map>('cached_news');
-
-  // تخزين معرّفات الأخبار التي سبق التعامل معها.
-  await Hive.openBox<dynamic>('new_articles');
-
+  await Hive.openBox('cached_news');
+  await Hive.openBox('new_articles');
   final themeController = ThemeController();
-  await themeController.loadTheme();
+ await themeController.loadTheme();
 
   final localeController = LocaleController();
-  await localeController.loadLocale();
-
+ await localeController.loadLocale();
   await NotificationService.instance.initialize();
-
   runApp(
     NewsApp(
       themeController: themeController,
@@ -47,7 +47,6 @@ Future<void> main() async {
     ),
   );
 }
-
 class NewsApp extends StatelessWidget {
   final ThemeController themeController;
   final LocaleController localeController;
@@ -57,106 +56,132 @@ class NewsApp extends StatelessWidget {
     required this.themeController,
     required this.localeController,
   });
-
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: themeController,
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        themeController,
+        localeController,
+      ]),
       builder: (context, child) {
-        return ListenableBuilder(
-          listenable: localeController,
-          builder: (context, child) {
-            return MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: themeController.themeMode,
-              locale: localeController.locale,
-              supportedLocales: const [Locale('en'), Locale('ar')],
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              home: StreamBuilder<User?>(
-                stream: FirebaseAuth.instance.authStateChanges(),
-                builder: (context, snapshot) {
-                  final localizations = AppLocalizations.of(context)!;
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'News App',
 
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Scaffold(
-                      body: Center(child: CircularProgressIndicator()),
-                    );
-                  }
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeController.themeMode,
+          locale: localeController.locale,
+          supportedLocales: const [
+            Locale('en'),
+            Locale('ar'),
+          ],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: AuthGate(
+            themeController: themeController,
+            localeController: localeController,
+          ),
+          onGenerateRoute: (settings) {
+            if (settings.name == RoutesApp.details) {
+              final arguments = settings.arguments;
 
-                  if (snapshot.hasError) {
-                    return Scaffold(
-                      body: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            localizations.somethingWentWrong,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  if (snapshot.hasData) {
-                    return MainScreen(
-                      themeController: themeController,
-                      localeController: localeController,
-                    );
-                  }
-
-                  return const LoginScreen();
-                },
-              ),
-              onGenerateRoute: (settings) {
-                if (settings.name == RoutesApp.details) {
-                  final argument = settings.arguments;
-
-                  if (argument is! NewsModel) {
-                    return MaterialPageRoute<void>(
-                      builder: (context) {
-                        return Scaffold(
-                          appBar: AppBar(),
-                          body: Builder(
-                            builder: (context) {
-                              final localizations = AppLocalizations.of(
-                                context,
-                              )!;
-
-                              return Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24),
-                                  child: Text(
-                                    localizations.invalidArticleLink,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    );
-                  }
-
-                  return MaterialPageRoute<void>(
-                    builder: (context) {
-                      return DetailsScreen(news: argument);
-                    },
-                  );
-                }
-
-                return null;
-              },
-            );
+              if (arguments is NewsModel) {
+                return MaterialPageRoute(
+                  builder: (_) => DetailsScreen(
+                    news: arguments,
+                  ),
+                );
+              }
+              return MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(
+                    title: const Text('Error'),
+                  ),
+                  body: const Center(
+                    child: Text('Invalid news information'),
+                  ),
+                ),
+              );
+            }
+            return null;
           },
         );
+      },
+    );
+  }
+}
+class AuthGate extends StatelessWidget {
+  final ThemeController themeController;
+  final LocaleController localeController;
+
+  const AuthGate({
+    super.key,
+    required this.themeController,
+    required this.localeController,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        debugPrint(
+          'AuthGate state: ${snapshot.connectionState}, '
+          'hasData: ${snapshot.hasData}, '
+          'hasError: ${snapshot.hasError}',
+        );
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        if (snapshot.hasError) {
+          debugPrint('AuthGate error: ${snapshot.error}');
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'An authentication error occurred.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () async {
+                      await FirebaseAuth.instance.signOut();
+                    },
+                    child: const Text('Back to Login'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        final user = snapshot.data;
+        if (user != null) {
+          debugPrint('Authenticated user: ${user.uid}');
+          return MainScreen(
+            key: ValueKey(user.uid),
+            themeController: themeController,
+            localeController: localeController,
+          );
+        }
+        debugPrint(
+          'No authenticated user. Showing LoginScreen.',  );
+          return const LoginScreen();
       },
     );
   }

@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:news_app/features/data/models/news_model.dart';
-import 'package:news_app/features/data/services/favorites_service.dart';
+import 'package:news_app/features/view/cubit/favorites_cubit.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -24,14 +25,17 @@ class NewsCard extends StatefulWidget {
 }
 
 class _NewsCardState extends State<NewsCard> {
-  final FavoritesService favoritesService = FavoritesService();
-
   bool isFavorite = false;
   bool isLoadingFavorite = false;
 
-  // رابط Cloudflare Worker الخاص بوسيط الصور.
   static const String imageProxyUrl =
       'https://news-image-proxy.yd94015.workers.dev/';
+
+  static const List<String> fallbackImageUrls = [
+    'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1000&q=80',
+    'https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1000&q=80',
+    'https://images.unsplash.com/photo-1503694978374-8a2fa686963a?auto=format&fit=crop&w=1000&q=80',
+  ];
 
   @override
   void initState() {
@@ -39,10 +43,11 @@ class _NewsCardState extends State<NewsCard> {
     checkFavorite();
   }
 
-  // التحقق مما إذا كان الخبر موجودًا في المفضلة.
   Future<void> checkFavorite() async {
     try {
-      final result = await favoritesService.isFavorite(widget.news.url);
+      final result = await context
+          .read<FavoritesCubit>()
+          .isFavorite(widget.news.url);
 
       if (!mounted) return;
 
@@ -54,7 +59,6 @@ class _NewsCardState extends State<NewsCard> {
     }
   }
 
-  // إضافة الخبر إلى المفضلة أو حذفه منها.
   Future<void> toggleFavorite() async {
     if (isLoadingFavorite) return;
 
@@ -63,16 +67,23 @@ class _NewsCardState extends State<NewsCard> {
     });
 
     try {
+      final favoritesCubit = context.read<FavoritesCubit>();
+
       if (isFavorite) {
-        await favoritesService.removeFavorite(widget.news.url);
+        await favoritesCubit.removeFavorite(widget.news.url);
       } else {
-        await favoritesService.addFavorite(widget.news);
+        await favoritesCubit.addFavorite(widget.news);
       }
 
       if (!mounted) return;
 
+      final updatedFavorite =
+          await favoritesCubit.isFavorite(widget.news.url);
+
+      if (!mounted) return;
+
       setState(() {
-        isFavorite = !isFavorite;
+        isFavorite = updatedFavorite;
         isLoadingFavorite = false;
       });
 
@@ -90,8 +101,9 @@ class _NewsCardState extends State<NewsCard> {
           duration: const Duration(seconds: 1),
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
       debugPrint('Failed to update favorite: $error');
+      debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
 
@@ -101,26 +113,26 @@ class _NewsCardState extends State<NewsCard> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.somethingWentWrong),
+          content: Text(
+            AppLocalizations.of(context)!.somethingWentWrong,
+          ),
         ),
       );
     }
   }
 
-  // تنسيق تاريخ الخبر حسب لغة التطبيق.
   String formatDate(String date) {
     try {
       final parsedDate = DateTime.parse(date).toLocal();
       final locale = Localizations.localeOf(context).toString();
 
-      return DateFormat('d MMM yyyy • h:mm a', locale).format(parsedDate);
+      return DateFormat('d MMM yyyy • h:mm a', locale)
+          .format(parsedDate);
     } catch (_) {
       return date;
     }
   }
 
-  // تحويل رابط الصورة إلى رابط Cloudflare Worker.
-  // بذلك لا يطلب التطبيق الصورة مباشرة من موقع الخبر.
   String? getUsableImageUrl(String rawUrl) {
     final imageUrl = rawUrl.trim();
 
@@ -136,32 +148,36 @@ class _NewsCardState extends State<NewsCard> {
       return null;
     }
 
-    // تحويل HTTP إلى HTTPS.
     final secureUri = uri.replace(scheme: 'https');
 
-    // إرسال رابط الصورة الأصلي إلى Cloudflare Worker.
-    final proxyUri = Uri.parse(imageProxyUrl)
-        .replace(queryParameters: {'url': secureUri.toString()});
+    final proxyUri = Uri.parse(imageProxyUrl).replace(
+      queryParameters: {
+        'url': secureUri.toString(),
+      },
+    );
 
     return proxyUri.toString();
   }
-
-  // الشكل البديل عند عدم توفر الصورة.
   Widget buildPlaceholder() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
 
     final localizations = AppLocalizations.of(context)!;
 
     return Container(
       width: double.infinity,
       height: 200,
-      color: isDark ? const Color(0xFF252936) : const Color(0xFFECEFF4),
+      color: isDark
+          ? const Color(0xFF252936)
+          : const Color(0xFFECEFF4),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.newspaper_rounded,
-            color: isDark ? Colors.white38 : Colors.blueGrey.shade300,
+            color: isDark
+                ? Colors.white38
+                : Colors.blueGrey.shade300,
             size: 55,
           ),
           const SizedBox(height: 10),
@@ -169,7 +185,9 @@ class _NewsCardState extends State<NewsCard> {
             localizations.imageUnavailable,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isDark ? Colors.white60 : Colors.blueGrey.shade500,
+              color: isDark
+                  ? Colors.white60
+                  : Colors.blueGrey.shade500,
               fontSize: 13,
             ),
           ),
@@ -178,16 +196,53 @@ class _NewsCardState extends State<NewsCard> {
     );
   }
 
-  // عرض الصورة باستخدام Cloudflare Worker فقط.
-  Widget buildNewsImage() {
-    final imageUrl = getUsableImageUrl(widget.news.imageUrl);
+  
+  List<String> getImageUrls() {
+    final urls = <String>[];
 
-    if (imageUrl == null) {
+    final originalUrl = widget.news.imageUrl.trim();
+    final proxyUrl = getUsableImageUrl(originalUrl);
+
+    if (proxyUrl != null) {
+      urls.add(proxyUrl);
+    }
+
+    final originalUri = Uri.tryParse(originalUrl);
+
+    if (originalUri != null &&
+        originalUri.host.isNotEmpty &&
+        (originalUri.scheme == 'http' ||
+            originalUri.scheme == 'https')) {
+      final secureOriginalUrl =
+          originalUri.replace(scheme: 'https').toString();
+
+      if (!urls.contains(secureOriginalUrl)) {
+        urls.add(secureOriginalUrl);
+      }
+    }
+
+    for (final fallbackUrl in fallbackImageUrls) {
+      if (!urls.contains(fallbackUrl)) {
+        urls.add(fallbackUrl);
+      }
+    }
+
+    return urls;
+  }
+
+  Widget buildImageWithFallback(
+    List<String> urls,
+    int index,
+  ) {
+    if (index >= urls.length) {
       return buildPlaceholder();
     }
 
+    final imageUrl = urls[index];
+
     return Image.network(
       imageUrl,
+      key: ValueKey(imageUrl),
       width: double.infinity,
       height: 200,
       fit: BoxFit.cover,
@@ -210,15 +265,35 @@ class _NewsCardState extends State<NewsCard> {
       },
       errorBuilder: (context, error, stackTrace) {
         if (kDebugMode) {
-          debugPrint('Original image URL: ${widget.news.imageUrl}');
+          debugPrint(
+            'Image failed: $imageUrl',
+          );
 
-          debugPrint('Proxy image URL: $imageUrl');
+          debugPrint(
+            'Trying fallback image number ${index + 2}',
+          );
 
-          debugPrint('Image loading error: $error');
+          debugPrint('Image error: $error');
         }
 
-        return buildPlaceholder();
+        return buildImageWithFallback(
+          urls,
+          index + 1,
+        );
       },
+    );
+  }
+
+  Widget buildNewsImage() {
+    final imageUrls = getImageUrls();
+
+    if (imageUrls.isEmpty) {
+      return buildPlaceholder();
+    }
+
+    return buildImageWithFallback(
+      imageUrls,
+      0,
     );
   }
 
@@ -226,9 +301,11 @@ class _NewsCardState extends State<NewsCard> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
 
-    final textColor = Theme.of(context).colorScheme.onSurface;
+    final textColor =
+        Theme.of(context).colorScheme.onSurface;
 
     final secondaryTextColor = isDark
         ? Colors.grey.shade400
@@ -243,7 +320,9 @@ class _NewsCardState extends State<NewsCard> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.08),
+              color: Colors.black.withValues(
+                alpha: isDark ? 0.20 : 0.08,
+              ),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -252,7 +331,6 @@ class _NewsCardState extends State<NewsCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // صورة الخبر وزر المفضلة.
             Stack(
               children: [
                 ClipRRect(
@@ -273,7 +351,9 @@ class _NewsCardState extends State<NewsCard> {
                         width: 46,
                         height: 46,
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.65),
+                          color: Colors.black.withValues(
+                            alpha: 0.65,
+                          ),
                           shape: BoxShape.circle,
                         ),
                         child: isLoadingFavorite
@@ -288,7 +368,9 @@ class _NewsCardState extends State<NewsCard> {
                                 isFavorite
                                     ? Icons.favorite
                                     : Icons.favorite_border,
-                                color: isFavorite ? Colors.red : Colors.white,
+                                color: isFavorite
+                                    ? Colors.red
+                                    : Colors.white,
                                 size: 25,
                               ),
                       ),
@@ -298,7 +380,6 @@ class _NewsCardState extends State<NewsCard> {
               ],
             ),
 
-            // بيانات الخبر.
             Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -391,7 +472,9 @@ class _NewsCardState extends State<NewsCard> {
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            formatDate(widget.news.publishedAt),
+                            formatDate(
+                              widget.news.publishedAt,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
